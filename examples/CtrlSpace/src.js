@@ -136,7 +136,7 @@ CtrlSpace.prototype = {
 		// save the scene reference.
 		this.scene = scene;
 		return new Promise(function(resolve){
-			if(that.renderer_ready){
+			//if(that.renderer_ready){
 				var current_objects = [];
 				var new_objects = [];
 				scene.traverse(function(child){
@@ -200,7 +200,7 @@ CtrlSpace.prototype = {
 					if (new_output) new_objects.push(new_output);
 				});
 				resolve({current_objects:current_objects,new_objects:new_objects});
-			}
+			//}
 		});
 	}
 };
