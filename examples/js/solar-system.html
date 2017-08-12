@@ -228,6 +228,7 @@ SolarSystemApp = (function(){
 		setInterval(function(){
 			ctrl_space.render(sim.scene)
 				.then(function(data){
+					console.log(data);
 					ctrl_space.sendData(data);
 				});
 		},16);
