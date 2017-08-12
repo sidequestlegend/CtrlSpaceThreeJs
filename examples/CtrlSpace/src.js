@@ -7,7 +7,9 @@ if(!window.THREE){
 	throw new Error("Three.js must be defined in the global scope i.e. THREE or window.THREE.");
 }
 // Main class constructor
-var CtrlSpace = function(){};
+var CtrlSpace = function(){
+	this.itemIndex = [];
+};
 
 CtrlSpace.prototype = {
 	createWebsocketTransport: function(url){
