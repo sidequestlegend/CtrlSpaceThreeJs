@@ -1,0 +1,55 @@
+<!doctype html>
+<head>
+	<title>AltspaceSDK examples</title>
+	<meta charset="utf-8" />
+	<style>
+		body {
+			background: white;
+			font: bold 20pt sans-serif;
+			margin: 2em;
+		}
+	</style>
+</head>
+<body>
+<ol id="list"></ol>
+<script>
+[
+	'..',
+	'aframe-cursor-events.html',
+	'aframe-fullspace.html',
+	'aframe-mesh-collider.html',
+	'aframe-meter-scale.html',
+	'aframe-pixel-scale.html',
+	'aframe-sync-color.html',
+	'aframe-sync.html',
+	'aframe-vertical-align/',
+	'cloning.html',
+	'scene-removal.html',
+	'deterministic-render.html',
+	'geo-stress-test/',
+	'multimaterial-fallback-test/',
+	'renderer-tests.html',
+	'behaviors.html',
+	'gamepad-and-focus.html',
+	'visibility.html',
+	'disable-hitbox-collider.html',
+	'material-side.html',
+	'transparency.html',
+	'transparency-stress.html',
+	'canvas-update.html',
+	'document.html',
+	'fullspace/index.html',
+	'texture-repeat-offset.html',
+	'texture-batching.html',
+	'texture-reuse.html',
+	'videotexture/',
+].forEach(function (example) {
+	var li = document.createElement('li');
+	var a = document.createElement('a');
+	a.href = a.textContent = example;
+	li.appendChild(a);
+	list.appendChild(li);
+});
+</script>
+</body>
+</html>
