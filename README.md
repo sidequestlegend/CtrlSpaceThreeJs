@@ -28,7 +28,11 @@ Then initialise and create a transport. Use with Altspace Simulation/AltRenderer
 
 ```
 
-var ctrl_space = new CtrlSpace();
+var ctrl_space = new CtrlSpace(); // Before any other initialisation to properly establish the shims before they are used by anything else.
+
+...
+
+
 ctrl_space.createWebsocketTransport("ws://localhost:3001");
 ctrl_space.addBehavior(sim.scene,true);// Debug flag for logging data.
 
