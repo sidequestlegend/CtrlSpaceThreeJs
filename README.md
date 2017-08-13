@@ -44,9 +44,11 @@ If you are not using the altspace SDK at all simply render inside your requestAn
 ```
 
 var ctrl_space = new CtrlSpace();
-ctrl_space.createWebsocketTransport("ws://localhost:3001");
 
 ...
+
+
+ctrl_space.createWebsocketTransport("ws://localhost:3001");
 
 function animate(delta){
     requestAnimationFrame(animate);
