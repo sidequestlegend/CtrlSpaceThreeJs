@@ -7,6 +7,7 @@
 <script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/MTLLoader.js"></script>
 <script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/OBJLoader.js"></script>
 <script src="../../dist/altspace.js"></script>
+<script src="../../CtrlSpace/src.js"></script>
 <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
 
 <style>
@@ -81,6 +82,9 @@ SolarSystemApp = (function(){
 	var multiloader = altspace.utilities.multiloader;
 	var loadRequest;
 
+
+	var ctrl_space;
+
 	function main() {
 		sim = window.sim = new altspace.utilities.Simulation();
 		sim.scene.add(solarSystem);
@@ -103,6 +107,9 @@ SolarSystemApp = (function(){
 			solarSystem.scale.set(20, 20, 20);
 			loadModels();
 		}
+		ctrl_space = new CtrlSpace();
+		ctrl_space.createWebsocketTransport("ws://localhost:3001");
+		ctrl_space.addBehavior(sim.scene,true);// Debug flag for logging data.
 	}
 
 	function loadModels(){// Load up the models

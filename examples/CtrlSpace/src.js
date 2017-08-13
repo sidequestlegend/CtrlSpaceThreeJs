@@ -14,6 +14,7 @@ CtrlSpace.prototype = {
 		this.transport = new WebSocket(url);
 		this.transport.onopen = function(){
 			that.transport.send(JSON.stringify({path:"browser"}));
+			that.transport_ready = true;
 		};
 		this.transport.onmessage = function(message) {
 			message = JSON.parse(message.data);
@@ -35,7 +36,7 @@ CtrlSpace.prototype = {
 		return this.transport;
 	},
 	sendData(data){
-		this.transport.send(JSON.stringify({path:"browserData",data:data}));
+		if(this.transport_ready)this.transport.send(JSON.stringify({path:"browserData",data:data}));
 	},
 	setupShims:function(){
 
