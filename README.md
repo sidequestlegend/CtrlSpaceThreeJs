@@ -56,7 +56,7 @@ It passes an object with two properties `current_objects` and `new_objects`. As 
 consecutive frame they appear in `current_objects` unless they are removed from the scene.
 
 `new_objects` will contain 3D properties of each object in the scene, i.e position, quaternion, scale and color but also the material info, geometry
-properties and type and a files object with a list of any model/material files loaded in the scene. Currently supports OBJ, MTL, GLTF and Collada.
+properties and type aswell as a files object with a list of any model/material files loaded in the scene. Currently supports OBJ, MTL, GLTF and Collada.
 
 `current_objects` will contain only 3D properties of each object.
 
