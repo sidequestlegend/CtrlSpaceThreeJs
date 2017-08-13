@@ -35,57 +35,30 @@ CtrlSpace.prototype = {
 		};
 		return this.transport;
 	},
-	sendData(data){
+	sendData:function(data){
 		if(this.transport_ready)this.transport.send(JSON.stringify({path:"browserData",data:data}));
 	},
 	setupShims:function(){
-
 		// Check for THREE global scope to be able to override.
 		if(!THREE&&!window.THREE){
 			throw new Error("Three.js must be defined in the global scope i.e. THREE or window.THREE.");
 		}
 		// Override the three.js loaders to access the load methods etc.
 		if(THREE.OBJLoader) {
-			this.OBJLoader = function (manager) {
-				return this.constructor(manager);
-			};
-			this.OBJLoader.prototype = new THREE.OBJLoader;
-			this.OBJLoader.prototype.__load = this.OBJLoader.prototype.load;
-			this.OBJLoader.prototype.load = this.load.call(this.OBJLoader.prototype,"OBJ");
-			this.OBJLoader.prototype.__setMaterials = this.OBJLoader.prototype.setMaterials;
-			this.OBJLoader.prototype.setMaterials = this.setMaterials.call(this.OBJLoader.prototype);
-			THREE.OBJLoader = this.OBJLoader;
+			THREE.OBJLoader.prototype.__load = THREE.OBJLoader.prototype.load;
+			THREE.OBJLoader.prototype.load = this.load.call(this,"OBJ");
 		}
 		if(THREE.MTLLoader) {
-			this.MTLLoader = function (manager) {
-				return this.constructor(manager);
-			};
-			this.MTLLoader.prototype = new THREE.MTLLoader;
-			this.MTLLoader.prototype.__load = this.MTLLoader.prototype.load;
-			this.MTLLoader.prototype.load = this.load.call(this.MTLLoader.prototype,"MTL");
-			this.MTLLoader.MaterialCreator = function (baseUrl, options) {
-				return this.constructor(baseUrl, options);
-			};
-			this.MTLLoader.MaterialCreator.prototype = Object.create(THREE.MTLLoader.MaterialCreator.prototype);
-			THREE.MTLLoader = this.MTLLoader;
+			THREE.MTLLoader.prototype.__load = THREE.MTLLoader.prototype.load;
+			THREE.MTLLoader.prototype.load = this.load.call(this,"MTL");
 		}
 		if(THREE.ColladaLoader){
-			this.ColladaLoader = function(manager){
-				return this.constructor(manager);
-			};
-			this.ColladaLoader.prototype = new THREE.ColladaLoader;
-			this.ColladaLoader.prototype.__load = this.ColladaLoader.prototype.load;
-			this.ColladaLoader.prototype.load = this.load.call(this.ColladaLoader.prototype,"Collada");
-			THREE.ColladaLoader = this.ColladaLoader;
+			THREE.ColladaLoader.prototype.__load = THREE.ColladaLoader.prototype.load;
+			THREE.ColladaLoader.prototype.load = this.load.call(this,"Collada");
 		}
 		if(THREE.GLTF2Loader){
-			this.GLTF2Loader = function(manager){
-				return this.constructor(manager);
-			};
-			this.GLTF2Loader.prototype = new THREE.GLTF2Loader;
-			this.GLTF2Loader.prototype.__load = this.GLTF2Loader.prototype.load;
-			this.GLTF2Loader.prototype.load = this.load.call(this.GLTF2Loader.prototype,"GLTF");
-			THREE.GLTF2Loader = this.GLTF2Loader;
+			THREE.GLTF2Loader.prototype.__load = THREE.GLTF2Loader.prototype.load;
+			THREE.GLTF2Loader.prototype.load = this.load.call(this,"GLTF");
 		}
 	},
 	addBehavior:function(scene,debug){
@@ -110,32 +83,12 @@ CtrlSpace.prototype = {
 			var that = this;
 			// Shim the three.js loaders and depending on the type save the url of the model file into the appropriate property of the object.
 			return this.__load(url, function (object) {
-				switch(type){
-					case "OBJ":
-						object.ctrl_space__obj = url;
-						object.ctrl_space__mtl = that.ctrl_space__mtl;
-						break;
-					case "MTL":
-						object.ctrl_space__obj = url;
-						break;
-					case "Collada":
-						object.ctrl_space__collada = url;
-						break;
-					case "GLTF":
-						object.ctrl_space__gltf = url;
-						break;
-				}
-				// Add mtl to three.js object in the case of OBJ load.
+				// Save the MTL file if it was stored in the materials property before object load.
+				if(that.materials&&that.materials.ctrl_space__MTL)object.ctrl_space__MTL = that.materials.ctrl_space__MTL;
+				object["ctrl_space__" + type] = url;
 				return onLoad(object);
 			}, onProgress, onError);
-		};
-	},
-	setMaterials: function() {
-		// Override the setMaterials method of the OBJLoader object. Use this to store the material url temporarily.
-		return function (materials) {
-			this.ctrl_space__mtl = materials.ctrl_space__obj;
-			return this.__setMaterials(materials);
-		};
+		}
 	},
 	setIfChanged: function(old_obj,new_obj,key) {
 		// Test an object property for changes against its last known property.
@@ -196,7 +149,7 @@ CtrlSpace.prototype = {
 	},
 	hasGeometry: function(child){
 		// Check if the object has a geometry or a model. We ignore other objects for now i.e scene, lights etc.
-		return child.ctrl_space__obj||child.ctrl_space__collada||child.ctrl_space__gltf||child.geometry;
+		return child.ctrl_space__OBJ||child.ctrl_space__Collada||child.ctrl_space__GLTF||child.geometry;
 	},
 	render: function(scene, debug) {
 		var that = this;
@@ -234,17 +187,18 @@ CtrlSpace.prototype = {
 					if (!new_output) new_output = that.getObjectData(child);
 					new_output.files = {};
 					// Store the model urls for transport to Unity/Unreal
-					if (child.ctrl_space__mtl) {
-						new_output.files.mtl = child.ctrl_space__mtl;
+					console.log(child);
+					if (child.ctrl_space__MTL) {
+						new_output.files.mtl = child.ctrl_space__MTL;
 					}
-					if (child.ctrl_space__obj) {
-						new_output.files.obj = child.ctrl_space__obj;
+					if (child.ctrl_space__OBJ) {
+						new_output.files.obj = child.ctrl_space__OBJ;
 					}
-					if (child.ctrl_space__collada) {
-						new_output.files.collada = child.ctrl_space__collada;
+					if (child.ctrl_space__Collada) {
+						new_output.files.collada = child.ctrl_space__Collada;
 					}
-					if (child.ctrl_space__gltf) {
-						new_output.files.gltf = child.ctrl_space__gltf;
+					if (child.ctrl_space__GLTF) {
+						new_output.files.gltf = child.ctrl_space__GLTF;
 					}
 					// Store the material object with material map urls.
 					new_output.material = {
@@ -267,7 +221,7 @@ CtrlSpace.prototype = {
 			that.sendData({current_objects:current_objects,new_objects:new_objects})
 		}
 		if(that.debug||debug){
-			console.log({current_objects:current_objects,new_objects:new_objects});
+			//console.log({current_objects:current_objects,new_objects:new_objects});
 		}
 	}
 };

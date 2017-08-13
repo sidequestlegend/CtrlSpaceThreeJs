@@ -24,12 +24,9 @@ wss.on('connection', function connection(ws) {
 				if(browserSocket&&browserSocket.readyState === WebSocket.OPEN)browserSocket.send(JSON.stringify({path:'unityData',data:'start'}));
 				break;
 			case "browserData":
-				console.log('browserData')
 				if(unitySocket&&unitySocket.readyState === WebSocket.OPEN)unitySocket.send(JSON.stringify(message));
-				console.log('send to unity');
 				break;
 			case "unityData":
-				console.log('unityData')
 				if(browserSocket&&browserSocket.readyState === WebSocket.OPEN)browserSocket.send(JSON.stringify(message));
 				break;
 		}

@@ -73,6 +73,8 @@ SolarSystemApp = (function(){
 	var distanceCoeff = 9;
 	var velocityCoeff = 0.005;
 
+
+	var ctrl_space = new CtrlSpace();
 	var sim;
 	var planets = [];
 	var planetsByName = {};
@@ -81,9 +83,6 @@ SolarSystemApp = (function(){
 	var solarSystem = new THREE.Object3D();
 	var multiloader = altspace.utilities.multiloader;
 	var loadRequest;
-
-
-	var ctrl_space;
 
 	function main() {
 		sim = window.sim = new altspace.utilities.Simulation();
@@ -107,7 +106,7 @@ SolarSystemApp = (function(){
 			solarSystem.scale.set(20, 20, 20);
 			loadModels();
 		}
-		ctrl_space = new CtrlSpace();
+
 		ctrl_space.createWebsocketTransport("ws://localhost:3001");
 		ctrl_space.addBehavior(sim.scene,true);// Debug flag for logging data.
 	}
