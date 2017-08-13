@@ -3,6 +3,11 @@
 <head>
 <meta charset=utf-8>
 <title>Solar System Example</title>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/build/three.min.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/OBJLoader.js"></script>
+<script src="../../dist/altspace.js"></script>
+<script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
 
 <style>
 	body {
@@ -43,88 +48,12 @@
 		<ul id="planet-list">
 		</ul>
 	</div>
-
-<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/build/three.min.js"></script>
-<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/MTLLoader.js"></script>
-<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/OBJLoader.js"></script>
-<script src="../../dist/altspace.js"></script>
-<script src="../../CtrlSpace/src.js"></script>
-<script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+</body>
 <script>
 if (!window.altspace || !window.altspace.inClient) {
 	document.write('<h3 class="ontop">To view this example, please open this page in <a href="http://altvr.com"> AltspaceVR </a></h3>');
 }
 
-//var UrltoDataURL = function(url) {
-//	return new Promise(function(resolve){
-//		var xhr = new XMLHttpRequest();
-//		xhr.onload = function() {
-//			var reader = new FileReader();
-//			reader.onloadend = function() {
-//				resolve(reader.result);
-//			};
-//			reader.readAsDataURL(xhr.response);
-//		};
-//		xhr.open('GET', url);
-//		xhr.responseType = 'blob';
-//		xhr.send();
-//	});
-//};
-//var itemIndex = [];
-//var renderMe = function(scene){
-//	var current_objects = [];
-//	var new_objects = [];
-//	var that = this;
-//	scene.traverse(function(child){
-//		var new_output;
-//		var output = {
-//				uuid:child.uuid,
-//				color:child.material&&child.material.color?child.material.color:{r:1,g:1,b:1},
-//				position:child.position,
-//				quaternion:{
-//					w:child.quaternion.w,
-//					x:child.quaternion.x,
-//					y:child.quaternion.y,
-//					z:child.quaternion.z
-//				},
-//				scale:child.scale
-//		};
-//		if(child.geometry){
-//			switch(child.geometry.type){
-//				case "BoxGeometry":
-//				case "BoxBufferGeometry":
-//					if(itemIndex.indexOf(child.uuid)===-1){
-//						if(!new_output)new_output={};
-//						new_output.geometry = {
-//							parameters:child.geometry.parameters,
-//							type:child.geometry.type
-//						};
-//					}
-//					break;
-//			}
-//		}
-//		if(itemIndex.indexOf(child.uuid)===-1) {
-//			var materialMap = undefined;
-//			if(child.material && child.material.map && child.material.map instanceof THREE.Texture){
-//				if(child.material.map.canvas){
-//					materialMap = Promise.resolve(child.material.map.canvas.toDataURL("image/jpeg"));
-//				}else if(child.material.map.image&& child.material.map.image instanceof Image){
-//					materialMap = UrltoDataURL(child.material.map.image.src);
-//				}
-//			}
-//			if(!new_output)new_output={};
-//			new_output.material = {
-//				transparent: child.material?child.material.transparent:false,
-//				visible: child.material?child.material.visible:false,
-//				map: materialMap
-//			};
-//			itemIndex.push(child.uuid);
-//		}
-//		current_objects.push(output);
-//		if(new_output)new_objects.push(new_output);
-//	});
-//	//console.log(current_objects[0],new_objects);
-//}
 SolarSystemApp = (function(){
 
 	var CONFIG = [
@@ -171,8 +100,7 @@ SolarSystemApp = (function(){
 		}
 		else {
 			compactMode = false;
-			//solarSystem.scale.set(20, 20, 20);
-			solarSystem.scale.set(5, 5, 5);
+			solarSystem.scale.set(20, 20, 20);
 			loadModels();
 		}
 	}
@@ -182,7 +110,6 @@ SolarSystemApp = (function(){
 			crossOrigin: 'anonymous',
 			baseUrl: 'models/solar-system/'
 		});
-
 		loadRequest = new multiloader.LoadRequest();
 		for (var i=0; i < CONFIG.length; i++) {
 			var name = CONFIG[i][0];
@@ -198,6 +125,7 @@ SolarSystemApp = (function(){
 
 	function initPlanets(){//Callback to be sure all models are loaded.
 		for (var i=0; i < loadRequest.objects.length; i++) {
+
 			var p = CONFIG[i];//guaranteed to be in same order
 			var name = p[0];
 			var radius = p[1];
@@ -206,7 +134,6 @@ SolarSystemApp = (function(){
 
 			var obj = loadRequest.objects[i];
 
-			console.log(obj);
 			planetsByName[name] = obj;
 			obj.solarDistance = distance * distanceCoeff;
 			obj.position.y = 10;
@@ -225,13 +152,6 @@ SolarSystemApp = (function(){
 			solarSystem.add(obj);
 			obj.addBehaviors(new OrbitBehavior());
 		}
-		setInterval(function(){
-			ctrl_space.render(sim.scene)
-				.then(function(data){
-					console.log(data);
-					ctrl_space.sendData(data);
-				});
-		},16);
 	}
 
 	function OrbitBehavior(){
@@ -240,9 +160,9 @@ SolarSystemApp = (function(){
 
 	OrbitBehavior.prototype.awake = function(o) {
 		this.obj = o;
-	};
+	}
 
-	OrbitBehavior.prototype.update = function() {//deltatime
+	OrbitBehavior.prototype.update = function(deltatime) {
 		if(compactMode){
 			if(this.obj === planetsByName[selectedPlanetName]) {
 				this.obj.visible = true;
@@ -269,7 +189,7 @@ SolarSystemApp = (function(){
 			this.obj.position.z = z;
 		}
 		this.obj.rotation.y += 0.001;
-	};
+	}
 
 
 	window.addEventListener('resize', function(){
@@ -289,10 +209,10 @@ SolarSystemApp = (function(){
 	return {
 		main: main,
 	}
+
 }());
 
 SolarSystemApp.main();
 
 </script>
-</body>
 </html>

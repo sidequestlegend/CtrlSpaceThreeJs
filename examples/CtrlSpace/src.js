@@ -2,13 +2,10 @@
  * Created by shane harris on 04/08/2017.
  */
 
-// Check for THREE global scope to be able to override.
-if(!window.THREE){
-	throw new Error("Three.js must be defined in the global scope i.e. THREE or window.THREE.");
-}
 // Main class constructor
 var CtrlSpace = function(){
 	this.itemIndex = [];
+	this.setupShims();
 };
 
 CtrlSpace.prototype = {
@@ -39,6 +36,73 @@ CtrlSpace.prototype = {
 	},
 	sendData(data){
 		this.transport.send(JSON.stringify({path:"browserData",data:data}));
+	},
+	setupShims:function(){
+
+		// Check for THREE global scope to be able to override.
+		if(!THREE&&!window.THREE){
+			throw new Error("Three.js must be defined in the global scope i.e. THREE or window.THREE.");
+		}
+		// Override the three.js loaders to access the load methods etc.
+		if(THREE.OBJLoader) {
+			this.OBJLoader = function (manager) {
+				return this.constructor(manager);
+			};
+			this.OBJLoader.prototype = new THREE.OBJLoader;
+			this.OBJLoader.prototype.__load = this.OBJLoader.prototype.load;
+			this.OBJLoader.prototype.load = this.load.call(this.OBJLoader.prototype,"OBJ");
+			this.OBJLoader.prototype.__setMaterials = this.OBJLoader.prototype.setMaterials;
+			this.OBJLoader.prototype.setMaterials = this.setMaterials.call(this.OBJLoader.prototype);
+			THREE.OBJLoader = this.OBJLoader;
+		}
+		if(THREE.MTLLoader) {
+			this.MTLLoader = function (manager) {
+				return this.constructor(manager);
+			};
+			this.MTLLoader.prototype = new THREE.MTLLoader;
+			this.MTLLoader.prototype.__load = this.MTLLoader.prototype.load;
+			this.MTLLoader.prototype.load = this.load.call(this.MTLLoader.prototype,"MTL");
+			this.MTLLoader.MaterialCreator = function (baseUrl, options) {
+				return this.constructor(baseUrl, options);
+			};
+			this.MTLLoader.MaterialCreator.prototype = Object.create(THREE.MTLLoader.MaterialCreator.prototype);
+			THREE.MTLLoader = this.MTLLoader;
+		}
+		if(THREE.ColladaLoader){
+			this.ColladaLoader = function(manager){
+				return this.constructor(manager);
+			};
+			this.ColladaLoader.prototype = new THREE.ColladaLoader;
+			this.ColladaLoader.prototype.__load = this.ColladaLoader.prototype.load;
+			this.ColladaLoader.prototype.load = this.load.call(this.ColladaLoader.prototype,"Collada");
+			THREE.ColladaLoader = this.ColladaLoader;
+		}
+		if(THREE.GLTF2Loader){
+			this.GLTF2Loader = function(manager){
+				return this.constructor(manager);
+			};
+			this.GLTF2Loader.prototype = new THREE.GLTF2Loader;
+			this.GLTF2Loader.prototype.__load = this.GLTF2Loader.prototype.load;
+			this.GLTF2Loader.prototype.load = this.load.call(this.GLTF2Loader.prototype,"GLTF");
+			THREE.GLTF2Loader = this.GLTF2Loader;
+		}
+	},
+	addBehavior:function(scene,debug){
+		var that = this;
+		this.scene = scene;
+		this.debug = debug;
+		// Setup behaviour for shimming Altspace. This will be attached to the 'Scene' object3d and allows a hook into the render update.
+		this.behaviour = function(){}
+		this.behaviour.prototype.awake = function(){};
+		this.behaviour.prototype.update = function(){
+			that.render();
+		};
+		// Traverse the scene and add the behaviour to the 'Scene' Object3D.
+		scene.traverse(function(child){
+			if(child.type==='Scene'){
+				child.addBehaviors(new that.behaviour());
+			}
+		});
 	},
 	load: function(type) {
 		return function (url, onLoad, onProgress, onError) {
@@ -133,122 +197,76 @@ CtrlSpace.prototype = {
 		// Check if the object has a geometry or a model. We ignore other objects for now i.e scene, lights etc.
 		return child.ctrl_space__obj||child.ctrl_space__collada||child.ctrl_space__gltf||child.geometry;
 	},
-	render: function(scene) {
+	render: function(scene, debug) {
 		var that = this;
-		// save the scene reference.
-		this.scene = scene;
-		return new Promise(function(resolve){
-			//if(that.renderer_ready){
-				var current_objects = [];
-				var new_objects = [];
-				scene.traverse(function(child){
-					if(that.hasGeometry(child)) {
+		var current_objects = [];
+		var new_objects = [];
+		if(scene)this.scene = scene;
+		this.scene.traverse(function(child){
+			if(that.hasGeometry(child)) {
+				if (that.itemIndex.indexOf(child.uuid) === -1) {
+					var new_output;
+					// Store primitive geometries parameters and types. This allows for generating these geometries
+					// on the Unity/Unreal side without having to transfer costly buffers over the wire.
+					if (child.geometry && child.geometry.type && child.geometry.parameters) {
 						if (that.itemIndex.indexOf(child.uuid) === -1) {
-							var new_output;
-							// Store primitive geometries parameters and types. This allows for generating these geometries
-							// on the Unity/Unreal side without having to transfer costly buffers over the wire.
-							if (child.geometry && child.geometry.type && child.geometry.parameters) {
-								if (that.itemIndex.indexOf(child.uuid) === -1) {
-									if (!new_output) new_output = that.getObjectData(child);
-									new_output.geometry = {
-										parameters: child.geometry.parameters,
-										type: child.geometry.type
-									};
-								}
-							}
-							// Grab textures and images. Canvas's are converted to a data uri and image urls are stored.
-							var materialMap;
-							if (child.material && child.material.map && child.material.map instanceof THREE.Texture) {
-								if (child.material.map.canvas) {
-									materialMap = {
-										url: child.material.map.canvas.toDataURL("image/jpeg"),
-										type: 'base64'
-									};
-								} else if (child.material.image && child.material.image instanceof Image) {
-									materialMap = {url: child.material.map.image.src, type: 'url'};
-								}
-							}
-							// Initialise the output object for the new item with the position, scale etc.
 							if (!new_output) new_output = that.getObjectData(child);
-							new_output.files = {};
-							// Store the model urls for transport to Unity/Unreal
-							if (child.ctrl_space__mtl) {
-								new_output.files.mtl = child.ctrl_space__mtl;
-							}
-							if (child.ctrl_space__obj) {
-								new_output.files.obj = child.ctrl_space__obj;
-							}
-							if (child.ctrl_space__collada) {
-								new_output.files.collada = child.ctrl_space__collada;
-							}
-							if (child.ctrl_space__gltf) {
-								new_output.files.gltf = child.ctrl_space__gltf;
-							}
-							// Store the material object with material map urls.
-							new_output.material = {
-								transparent: child.material ? child.material.transparent : false,
-								visible: child.material ? child.material.visible : false,
-								map: materialMap
+							new_output.geometry = {
+								parameters: child.geometry.parameters,
+								type: child.geometry.type
 							};
-							// Save this new item's uuid to the index for later retrieval.
-							that.itemIndex.push(child.uuid);
 						}
-						// Initialise the update output with the position, scale etc.
-						var output = that.getObjectData(child);
 					}
-					// Add output only if item is not new.
-					if (output && !new_output) current_objects.push(output);
-					// Add new item
-					if (new_output) new_objects.push(new_output);
-				});
-				resolve({current_objects:current_objects,new_objects:new_objects});
-			//}
+					// Grab textures and images. Canvas's are converted to a data uri and image urls are stored.
+					var materialMap;
+					if (child.material && child.material.map && child.material.map instanceof THREE.Texture) {
+						if (child.material.map.canvas) {
+							materialMap = {
+								url: child.material.map.canvas.toDataURL("image/jpeg"),
+								type: 'base64'
+							};
+						} else if (child.material.image && child.material.image instanceof Image) {
+							materialMap = {url: child.material.map.image.src, type: 'url'};
+						}
+					}
+					// Initialise the output object for the new item with the position, scale etc.
+					if (!new_output) new_output = that.getObjectData(child);
+					new_output.files = {};
+					// Store the model urls for transport to Unity/Unreal
+					if (child.ctrl_space__mtl) {
+						new_output.files.mtl = child.ctrl_space__mtl;
+					}
+					if (child.ctrl_space__obj) {
+						new_output.files.obj = child.ctrl_space__obj;
+					}
+					if (child.ctrl_space__collada) {
+						new_output.files.collada = child.ctrl_space__collada;
+					}
+					if (child.ctrl_space__gltf) {
+						new_output.files.gltf = child.ctrl_space__gltf;
+					}
+					// Store the material object with material map urls.
+					new_output.material = {
+						transparent: child.material ? child.material.transparent : false,
+						visible: child.material ? child.material.visible : false,
+						map: materialMap
+					};
+					// Save this new item's uuid to the index for later retrieval.
+					that.itemIndex.push(child.uuid);
+				}
+				// Initialise the update output with the position, scale etc.
+				var output = that.getObjectData(child);
+			}
+			// Add output only if item is not new.
+			if (output && !new_output) current_objects.push(output);
+			// Add new item
+			if (new_output) new_objects.push(new_output);
 		});
+		if(that.transport){
+			that.sendData({current_objects:current_objects,new_objects:new_objects})
+		}
+		if(that.debug||debug){
+			console.log({current_objects:current_objects,new_objects:new_objects});
+		}
 	}
 };
-
-var ctrl_space = new CtrlSpace();
-ctrl_space.createWebsocketTransport("ws://localhost:3001");
-// Override the three.js loaders to access the load methods etc.
-if(THREE.OBJLoader) {
-	CtrlSpace.OBJLoader = function (manager) {
-		return this.constructor(manager);
-	};
-	CtrlSpace.OBJLoader.prototype = Object.create(THREE.OBJLoader.prototype);
-	CtrlSpace.OBJLoader.prototype.__load = CtrlSpace.OBJLoader.prototype.load;
-	CtrlSpace.OBJLoader.prototype.load = ctrl_space.load.call(CtrlSpace.OBJLoader.prototype,"OBJ");
-	CtrlSpace.OBJLoader.prototype.__setMaterials = CtrlSpace.OBJLoader.prototype.setMaterials;
-	CtrlSpace.OBJLoader.prototype.setMaterials = ctrl_space.setMaterials.call(CtrlSpace.OBJLoader.prototype);
-	THREE.OBJLoader = CtrlSpace.OBJLoader;
-}
-if(THREE.MTLLoader) {
-	CtrlSpace.MTLLoader = function (manager) {
-		return this.constructor(manager);
-	};
-	CtrlSpace.MTLLoader.prototype = Object.create(THREE.MTLLoader.prototype);
-	CtrlSpace.MTLLoader.prototype.__load = CtrlSpace.MTLLoader.prototype.load;
-	CtrlSpace.MTLLoader.prototype.load = ctrl_space.load.call(CtrlSpace.MTLLoader.prototype,"MTL");
-	CtrlSpace.MTLLoader.MaterialCreator = function (baseUrl, options) {
-		return this.constructor(baseUrl, options);
-	};
-	CtrlSpace.MTLLoader.MaterialCreator.prototype = Object.create(THREE.MTLLoader.MaterialCreator.prototype);
-	THREE.MTLLoader = CtrlSpace.MTLLoader;
-}
-if(THREE.ColladaLoader){
-	CtrlSpace.ColladaLoader = function(manager){
-		return this.constructor(manager);
-	};
-	CtrlSpace.ColladaLoader.prototype = Object.create(THREE.ColladaLoader.prototype);
-	CtrlSpace.ColladaLoader.prototype.__load = CtrlSpace.ColladaLoader.prototype.load;
-	CtrlSpace.ColladaLoader.prototype.load = ctrl_space.load.call(CtrlSpace.ColladaLoader.prototype,"Collada");
-	THREE.ColladaLoader = CtrlSpace.ColladaLoader;
-}
-if(THREE.GLTF2Loader){
-	CtrlSpace.GLTF2Loader = function(manager){
-		return this.constructor(manager);
-	};
-	CtrlSpace.GLTF2Loader.prototype = Object.create(THREE.GLTF2Loader.prototype);
-	CtrlSpace.GLTF2Loader.prototype.__load = CtrlSpace.GLTF2Loader.prototype.load;
-	CtrlSpace.GLTF2Loader.prototype.load = ctrl_space.load.call(CtrlSpace.GLTF2Loader.prototype,"GLTF");
-	THREE.ColladaLoader = CtrlSpace.GLTF2Loader;
-}

@@ -5,8 +5,6 @@
 		<title>My first Three.js app in Altspace</title>
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/build/three.js"></script>
 		<script src="../../dist/altspace.js"></script>
-		<script src="http://localhost:7878/socket.io/socket.io.js"></script>
-		<script src="oldspace.js"></script>
 	</head>
 	<body>
 		<script>
@@ -15,7 +13,7 @@
 		}
 
 		var scene = new THREE.Scene();
-		var renderer = new THREE.AltRenderer();//altspace.getThreeJSRenderer({version:'0.2.0'});
+		var renderer = altspace.getThreeJSRenderer({version:'0.2.0'});
 
 		var geometry = new THREE.BoxGeometry(200, 200, 200);
 		var material = new THREE.MeshBasicMaterial({
