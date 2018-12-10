@@ -16,9 +16,9 @@ To implement this in your existing projects simply include examples/CtrlSpace/sr
 
 
 ```
-<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/build/three.min.js"></script>
-<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/MTLLoader.js"></script>
-<script src="https://cdn.rawgit.com/mrdoob/three.js/r84/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r84/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r84/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r84/examples/js/loaders/OBJLoader.js"></script>
 <script src="examples/dist/altspace.js"></script>
 <script src="examples/CtrlSpace/src.js"></script>
 <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
